@@ -1,3 +1,3 @@
 # PostgreSQL
-В этом репозитории хранится набор скриптов, которые я пробовал выполнять в СУБД PostgreSQL.
-В дальнейшем все, что связано с СУБД PostgreSQL будет помещаться в данный репозиторий.
+This repository contains a set of scripts that I tried to execute in PostgreSQL DBMS.
+In the future, everything related to the PostgreSQL DBMS will be placed in this repository.
