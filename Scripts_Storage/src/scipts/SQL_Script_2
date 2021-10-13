@@ -1,0 +1,229 @@
+
+--PostrgeSQL Практикум №1
+
+create schema books_database;
+--Задание №1
+--Создать таблицу авторов книг со следующими полями:
+--Идентификатор
+--Имя
+--Фамилия
+--Создать таблицу для хранения данных о книгах со сл. полями:
+--Идентификатор
+--Название
+--Год издания
+--Кол-во сраниц
+--идентификатор автора
+--Сделать первичным ключом каждой таблицы идентификатор
+--Добавить идентификаторам автоинкрементирование
+--В таблице книг сделать внешнию ключ на таблицу авторов 
+
+create table books_database.authors (
+id serial primary key,
+author_name varchar(128) not null,
+author_surname varchar(128) not null,
+unique (author_name,
+author_surname)
+);
+-----------------------
+drop table books_database.authors;
+-----------------------
+create table books_database.books (
+id serial primary key,
+book_title varchar(128) unique not null,
+age_of_publishing int not null,
+num_of_pages int not null,
+author_id int references books_database.authors(id) on
+delete
+	cascade
+);
+-----------------------
+drop table books_database.books;
+--Задание №2
+--Запонить таблицу авторов данными
+insert
+	into
+	books_database.authors (author_name,
+	author_surname)
+values 
+(
+'Александр',
+'Пушкин'
+),
+(
+'Александр',
+'Блок'
+),
+(
+'Лев',
+'Толстой'
+),
+(
+'Сергей',
+'Есенин'
+),
+(
+'Федр',
+'Достоевский'
+),
+(
+'Максим',
+'Горький'
+);
+--Задание №3
+--Заполнить таблицу книг данными
+insert
+	into
+	books_database.books(book_title,
+	age_of_publishing,
+	num_of_pages,
+	author_id)
+values 
+('Капитанская дочка',
+1836,
+150,
+1),
+('Руслан и Людмила',
+1820,
+250,
+1),
+('Стихи о прекрасной даме',
+1905,
+30,
+2),
+('Двенадцать',
+1918,
+100,
+2),
+('Война и мир',
+1867,
+900,
+3),
+('Детство',
+1852,
+400,
+3),
+('Анна Каренина',
+1877,
+200,
+3),
+('Анна Снегина',
+1925,
+170,
+4),
+('Преступление и наказание',
+1866,
+300,
+5),
+('Братья Карамазовы',
+1879,
+160,
+5),
+('Мама',
+1906,
+215,
+6),
+('Старуха Изергиль',
+1892,
+400,
+6);
+--Задание №4
+--Написать запрос, выбирающий: название книги, год и имя автора, отсортиорованные по
+--году издания в возрастающем порядке
+select
+	book_title,
+	age_of_publishing,
+	(
+	select
+		aut.author_surname
+	from
+		books_database.authors aut
+	where
+		aut.id = bks.author_id)
+from
+	books_database.books bks
+order by
+	age_of_publishing asc;
+--Задание №5
+--Написать запрос, выбирающий кол-во книг у заданного автора
+select
+	a.author_surname,
+	(
+	select
+		count(b.author_id) num_of_books
+	from
+		books_database.books b
+	where
+		b.author_id = a.id
+)
+from
+	books_database.authors a;
+--Задание №6
+--Написать запрос, выбирающий книги, у которых кол-во стрниц больше среднего кол-ва по всем книгам
+--P.S.Поковырялся в интерфейсе ДБивера - теперь уставновлено автосоответствие и не нужно каждый раз писать схему
+select
+	b2.book_title,
+	b2.num_of_pages
+from
+	books b2
+where
+	b2.num_of_pages > 
+(
+	select
+		avg(b.num_of_pages)
+	from
+		books b
+);
+--Задание №7
+--Написать запрос, выбирающий 5 самых старых книг, кол-во страниц в этих книгах,а
+--также суммарное кол-во страниц среди этих книг 
+select
+	b.book_title,
+	b.age_of_publishing,
+	b.num_of_pages,
+	(
+	select
+		sum(t.num_of_pages)
+	from
+		(
+		select
+			b.num_of_pages
+		from
+			books b
+		order by
+			b.age_of_publishing desc
+		limit 5
+) t
+	)
+from
+	books b
+order by
+	b.age_of_publishing desc
+limit 5;
+--Задание №8
+--Написать запрос, изменяющий кол-во страниц у одной из книг
+update
+	books
+set
+	num_of_pages = 1
+where
+	book_title = 'Капитанская дочка';
+--Задание 9
+--Написать запрос, удаляющий автора, который написал самую большую книгу
+delete
+from
+	authors
+where
+	id = 
+(
+	select
+		author_id
+	from
+		books
+	where
+		num_of_pages = (
+		select
+			max(num_of_pages)
+		from
+			books)
+)
+returning *;

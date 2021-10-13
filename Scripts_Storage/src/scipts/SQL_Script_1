@@ -1,0 +1,639 @@
+
+--Практика PostgreSQL (без заданий)
+create table company_storage.company 
+(
+	id int,
+	name varchar(128) not null,
+	date date not null check (date > '1995-01-01'
+and date < '2020-01-01'),
+primary key (id),
+unique (name)
+);
+-------------------------------
+drop table company_storage.company;
+-------------------------------
+insert
+	into
+	company_storage.company (id,
+	"name",
+	"date")
+values 
+	(1,
+'Google',
+'2001-01-01'),
+	(2,
+'Apple',
+'2002-10-29'),
+	(3,
+'Facebook',
+'1995-09-13'),
+	(4,
+'Amazon',
+'2005-06-17');
+-------------------------------
+select
+	name
+from
+	company_storage.company
+where
+	"date" > '2001-01-01';
+--insert into company_storage.company (id, name, date)
+--values (4, 'Temp', '2002-02-02');
+--Видимо, тут нет особой разницы, с кавычками или без. Таблица заполняется корректно в обоих случаях
+-------------------------------	  
+create table company_storage.employee (
+	id serial primary key,
+	first_name varchar(128) not null,
+	last_name varchar(128) not null,
+	company_id int references company_storage.company (id) on
+delete
+	cascade,
+	salary int,
+	unique (first_name,
+	last_name)
+);
+-------------------------------
+drop table company_storage.employee;
+-------------------------------
+insert
+	into
+	company_storage.employee (first_name,
+	last_name,
+	company_id,
+	salary)
+values 
+	('Ivan',
+'Sidorov',
+1,
+500),
+	('Ivan',
+'Ivanov',
+2,
+1000),
+	('Arni',
+'Paramonov',
+2,
+null),
+	('Petr',
+'Petrov',
+3,
+2000),
+	('Sveta',
+'Svetikova',
+null,
+1500);
+-------------------------------
+select
+	id,
+	first_name,
+	last_name,
+	salary
+	--sum(salary)
+	--avg(salary)
+from
+	company_storage.employee;
+--where  first_name like 'Iv%' and last_name ilike '%ov'
+--order by first_name, salary desc;
+--limit 2
+--offset 2;
+-------------------------------
+select
+	first_name
+from
+	company_storage.employee
+where
+	company_id is not null
+union 
+
+select
+	first_name
+from
+	company_storage.employee
+where
+	salary is null;
+-------------------------------
+select
+	avg(empl.salary)
+from
+	(
+	select
+		*
+	from
+		company_storage.employee
+	order by
+		salary asc
+	limit 2
+	) empl;
+-------------------------------
+select
+	*
+from
+	company_storage.employee
+order by
+	salary asc
+limit 2;
+-------------------------------
+select
+	*,
+	(
+	select
+		avg(e.salary)
+	from
+		company_storage.employee e
+	),
+	(
+	select
+		max(e2.salary)
+	from
+		company_storage.employee e2
+	)
+from
+	company_storage.employee;
+-------------------------------
+select
+	*,
+	(
+	select
+		max(salary)
+	from
+		company_storage.employee
+	) - salary diff
+from
+	company_storage.employee;
+-------------------------------
+select
+	*
+from
+	company_storage.employee e
+where
+	company_id in 
+	(
+	select
+		c.id
+	from
+		company_storage.company c
+	where
+		c."date" > '1996-01-01'
+	);
+-------------------------------
+select
+	*
+from
+	company_storage.employee e
+where
+	company_id in (1, 2);
+-------------------------------
+select
+	*
+from
+	(
+	select
+		*
+	from
+		(
+	values 
+	    (1,
+	'Google',
+	'2001-01-01'),
+	    (2,
+	'Apple',
+	'2002-10-29'),
+	    (3,
+	'Facebook',
+	'1995-09-13')
+	    ) t
+    )y;
+-------------------------------
+delete
+from
+	company_storage.employee
+where
+	salary is null;
+-------------------------------
+select
+	*
+from
+	company_storage.employee e;
+-------------------------------
+delete
+from
+	company_storage.employee
+where
+	salary = 
+	(
+	select
+		max(salary)
+	from
+		company_storage.employee
+	);
+-------------------------------
+delete
+from
+	company_storage.company
+where
+	id = 1;
+-------------------------------
+delete
+from
+	company_storage.employee
+where
+	company_id = 1;
+-------------------------------
+delete
+from
+	company_storage.company
+where
+	id = 2;
+
+update
+	company_storage.employee
+set 
+	company_id = 1,
+	salary = 1700
+where 
+	id = 12
+returning 
+	id,
+	first_name || '' || last_name fio;
+--Урок 20. Создаю доп. таблицы
+create table contact 
+(
+id serial primary key,
+number varchar(128) not null,
+type varchar(128)
+);
+-------------------------------
+drop table contact;
+-------------------------------
+insert
+	into
+	contact
+	(
+	number,
+	type 
+	)
+values 
+	('234-56-78',
+'домашний'),
+	('987-65-43',
+'рабочий'),
+	('565-25-91',
+'мобильный'),
+	('332-55-67',
+null),
+	('465-11-22',
+null);
+-------------------------------
+create table company_storage.employee_contact
+(
+	employee_id int,
+	contact_id int,
+foreign key (employee_id) references employee(id) on
+delete
+	cascade,
+	foreign key (contact_id) references contact(id) on
+	delete
+		cascade,
+		primary key (employee_id,
+		contact_id)
+);
+-------------------------------
+drop table company_storage.employee_contact;
+-------------------------------
+insert
+	into
+	employee_contact 
+	(
+	employee_id,
+	contact_id 
+	)
+values
+	(1,
+1),
+	(1,
+2),
+	(2,
+2),
+	(2,
+3),
+	(3,
+4),
+	(4,
+5);
+-- Урок 20
+select 
+	first_name,
+	last_name,
+	(
+	select 
+		c."name"
+	from 
+		company c
+	where
+		e.company_id = c.id 
+	) companies
+from 
+	employee e;
+-------------------------------
+select 
+	c."name",
+	e.first_name || e.last_name fio
+from 
+	company c,
+	employee e
+where
+	e.company_id = c.id;
+-------------------------------
+select 
+	c."name",
+	e.first_name || e.last_name fio
+from 
+	employee e
+join
+	company c
+on 
+	e.company_id = c.id;
+-------------------------------
+select 
+	c."name",
+	e.first_name || ' ' || e.last_name fio,
+	ec.contact_id,
+	c2.number
+from 
+	employee e
+join
+	company c
+on 
+	e.company_id = c.id
+join 
+	employee_contact ec 
+on 
+	e.id = ec.employee_id
+join 
+	contact c2 
+on 
+	ec.contact_id = c2.id;
+-------------------------------
+select 
+	*
+from 
+	employee e2
+cross join 
+	company c;
+-------------------------------
+select 
+	*
+from 
+	company c
+cross join 
+	(
+	select 
+		count(*)
+	from
+		employee e 
+	) t;
+-------------------------------
+select 
+	c.name,
+	e.first_name
+from
+	company c
+left join 
+	employee e 
+on 
+	c.id = e.company_id;
+-------------------------------
+select 
+	c.name,
+	e.first_name
+from
+	employee e
+left join 
+	company c 
+on 
+	c.id = e.company_id;
+-------------------------------
+select 
+	c.name,
+	e.first_name
+from
+	employee e
+right join 
+	company c 
+on 
+	c.id = e.company_id;
+-------------------------------
+select 
+	c.name,
+	e.first_name
+from
+	employee e
+right join 
+	company c 
+on 
+	c.id = e.company_id
+	and
+	c."date" > '2001-01-01';
+-------------------------------
+select 
+	c.name,
+	e.first_name
+from
+	employee e
+full join 
+	company c 
+on 
+	c.id = e.company_id;
+-------------------------------
+--Урок 21
+--кол-во сотрудников у указанной компании
+select 
+	c."name", 
+	count(e.id)
+from 
+	company c
+left join
+	employee e
+on 
+	c.id = e.company_id
+where
+	c."name" = 'Amazon'
+group by
+	c.id;
+-------------------------------
+select 
+	c."name",
+	count(e.id)
+from 
+	company c
+left join
+	employee e
+on 
+	c.id = e.company_id
+group by
+	c.id
+having
+	count(e.id) > 0;
+-------------------------------
+select
+	(
+	select
+		c2."name"
+	from
+		company c2
+	where 
+		c2."name" = 'Apple'
+	),
+	count(e.id)
+from 
+	company c
+join
+	employee e
+on 
+	c.id = e.company_id
+where
+	c."name" = 'Apple';
+-------------------------------
+select 
+	c."name", 
+	e.first_name || ' ' || e.last_name fio
+from 
+	company c
+left join
+	employee e
+on 
+	c.id = e.company_id;
+-------------------------------
+select 
+	c."name",
+	e.last_name,
+	e.salary, 
+	count(e.id) over (),
+	max(e.salary) over (),
+	avg(e.salary) over (),
+	row_number() over (),
+	dense_rank() over
+		(
+order by
+			e.salary
+		nulls first 
+		),
+	lag(e.salary) over (
+order by
+	e.salary)
+from 
+	company c
+full join
+	employee e 
+on 
+	e.company_id = c.id
+order by
+	c."name";
+-------------------------------
+select 
+	c."name",
+	e.last_name,
+	e.salary, 
+	row_number() over (),
+	dense_rank() over
+		(
+		partition by c.id
+order by
+			e.salary
+		nulls first 
+		)
+from 
+	company c
+full join
+	employee e 
+on 
+	e.company_id = c.id
+order by
+	c."name";
+-------------------------------
+create view employee_view as
+select 
+	c."name",
+	e.last_name,
+	e.salary, 
+	count(e.id) over (),
+	max(e.salary) over (),
+	avg(e.salary) over (),
+	row_number() over (),
+	dense_rank() over
+		(
+order by
+			e.salary
+		nulls first 
+		),
+	lag(e.salary) over (
+order by
+	e.salary)
+from 
+	company c
+full join
+	employee e 
+on 
+	e.company_id = c.id
+order by
+	c."name";
+-------------------------------
+select
+	*
+from
+	company_storage.employee_view ev
+where
+	ev."name" = 'Facebook';
+-------------------------------
+create materialized view m_employee_view as
+select 
+	c."name",
+	e.last_name,
+	e.salary, 
+	count(e.id) over (),
+	max(e.salary) over (),
+	avg(e.salary) over (),
+	row_number() over (),
+	dense_rank() over
+		(
+order by
+			e.salary
+		nulls first 
+		),
+	lag(e.salary) over (
+order by
+	e.salary)
+from 
+	company c
+full join
+	employee e 
+on 
+	e.company_id = c.id
+order by
+	c."name";
+-------------------------------
+select 
+	*
+from
+	company_storage.m_employee_view mev
+where 
+	max = 2000;
+-------------------------------
+refresh materialized view m_employee_view;
+-------------------------------
+alter table if exists employee
+add column gender int;
+-------------------------------
+update
+	employee
+set 
+	gender = 1
+where 
+	id <= 2;
+-------------------------------
+alter table employee
+alter column gender set
+not null;
+-------------------------------
+alter table employee
+drop column gender;
