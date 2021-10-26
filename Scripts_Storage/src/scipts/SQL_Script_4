@@ -1,0 +1,92 @@
+create table contacts (
+id serial primary key,
+first_name varchar(256) not null,
+last_name varchar(256) not null
+);
+
+insert into contacts (first_name, last_name)
+values ('Титов', 'Павел'),
+	   ('Иванова', 'Анастасия'),
+	   ('Михаил', 'Попов'),
+	   ('Дмитрий', 'Деркач'),
+	   ('Дмитрий', 'Поверов');	  
+
+create table phone_nums_types (
+id serial primary key,
+num_type varchar(256) not null unique
+);
+
+insert into phone_nums_types (num_type)
+values 
+('Личный'),
+('Рабочий'),
+('Домашний');
+
+create table phone_nums (
+id serial primary key,
+contacts_id int references contacts(id),
+phone_number int not null,
+phone_nums_types int references phone_nums_types(id)
+);
+
+alter table phone_nums 
+ALTER COLUMN phone_number TYPE BIGINT;
+
+insert into phone_nums (contacts_id, phone_number, phone_nums_types)
+values
+(1, 80299977123, 1),
+(1, 80442299933, 2),
+--------------------
+(2, 80293467392, 1),
+(2, 80442299933, 2),
+(2, 80294467224, 3),
+--------------------
+(3, 80442299933, 2),
+--------------------
+(4, 80299374924, 1),
+(4, 80293342235, 3),
+--------------------
+(5, 80442299933, 2);
+
+create table cathegories (
+id serial primary key,
+cathegory varchar(256) not null unique
+);
+
+insert into cathegories (cathegory)
+values 
+('Друзья'),
+('Одноклассники'),
+('Родственники');
+
+create table cathegories_contacts_connection (
+id serial primary key,
+contacts_id int references contacts(id),
+cathegories_id int references cathegories(id)  
+);
+
+insert into cathegories_contacts_connection (contacts_id, cathegories_id)
+values
+(1,1),
+(1,2),
+-------
+(2,1),
+-------
+(3,3),
+-------
+(4,1),
+(4,2),
+-------
+(5,3);
+-------
+--some information about contacts
+select
+c.first_name,
+c.last_name,
+pn.phone_number,
+pnt.num_type 
+from contacts c 
+full join phone_nums pn 
+on pn.contacts_id = c.id
+full join phone_nums_types pnt
+on pnt.id = pn.phone_nums_types; 
